@@ -17,3 +17,5 @@ jobs:
         sdk: "2.14.4"
     - run: |
         dart pub get
+    - run: |
+        go test -v ./...
