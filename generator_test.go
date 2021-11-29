@@ -109,5 +109,5 @@ func testWithDatasets(t *testing.T, dir, structName string) {
 }
 
 func TestGenerator_Generate(t *testing.T) {
-	testWithDatasets(t, "testdata/standard", "PostUserRequest")
+	testWithDatasets(t, "testfiles/standard", "PostUserRequest")
 }
