@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
 
 	tstypes "github.com/go-generalize/go2ts/pkg/types"
@@ -51,7 +50,6 @@ type generatorParam struct {
 	Consts  []constant
 	Objects []object
 
-	FileName       string
 	UseTimePackage bool
 }
 
@@ -60,7 +58,7 @@ type metadata struct {
 	inlineIndex     int
 }
 
-func NewGenerator(types map[string]tstypes.Type, prereserved []string, fileName string) *Generator {
+func NewGenerator(types map[string]tstypes.Type, prereserved []string) *Generator {
 	prs := map[string]string{}
 	for _, p := range prereserved {
 		_, name := SplitPackegeStruct(p)
@@ -68,14 +66,11 @@ func NewGenerator(types map[string]tstypes.Type, prereserved []string, fileName 
 	}
 
 	return &Generator{
-		types: types,
-		generatorParam: generatorParam{
-			FileName: strings.TrimSuffix(fileName, ".dart"),
-		},
-
-		converted:   map[string]string{},
-		reserved:    map[string]struct{}{},
-		prereserved: prs,
+		types:          types,
+		generatorParam: generatorParam{},
+		converted:      map[string]string{},
+		reserved:       map[string]struct{}{},
+		prereserved:    prs,
 	}
 }
 

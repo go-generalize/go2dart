@@ -9,9 +9,6 @@ abstract class JsonConverter<T, S> {
   S toJson(T object);
 }
 
-// part '{{ .FileName }}.freezed.dart';
-// part '{{ .FileName }}.g.dart';
-
 class ListConverter<T, Base> implements JsonConverter<List<T>, List<Base>> {
   const ListConverter(this.internalConverter);
 

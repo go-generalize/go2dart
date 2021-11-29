@@ -1,0 +1,25 @@
+{
+    "Array": [
+      "OK",
+      "Failure"
+    ],
+    "B": {"a": false},
+    "Mode": 1,
+    "s": "sss",
+    "Status": {
+      "aaa": [
+        "OK",
+        "Failure"
+      ],
+      "bbb": null
+    },
+    "SinS": {
+      "A": true,
+      "B": "sss",
+      "C": [
+        "sss",
+        "sss"
+      ]
+    },
+    "T": "2006-04-13T14:12:53.424212Z"
+}
