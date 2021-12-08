@@ -19,6 +19,14 @@ type Generator struct {
 	converted   map[string]string
 	prereserved map[string]string
 	reserved    map[string]struct{}
+
+	ExternalImporter func(*tstypes.Object) *ExternalImporter
+	imported         map[string]struct{}
+}
+
+type ExternalImporter struct {
+	Path string
+	Name string
 }
 
 type objectEntry struct {
@@ -71,6 +79,7 @@ func NewGenerator(types map[string]tstypes.Type, prereserved []string) *Generato
 		converted:      map[string]string{},
 		reserved:       map[string]struct{}{},
 		prereserved:    prs,
+		imported:       map[string]struct{}{},
 	}
 }
 
@@ -234,6 +243,21 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 
 func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) convertedType {
 	var converted object
+
+	if g.ExternalImporter != nil {
+		ei := g.ExternalImporter(obj)
+
+		if ei != nil {
+			g.imported[ei.Path] = struct{}{}
+
+			return convertedType{
+				Required:  true,
+				Converter: ei.Name + "Converter()",
+				Base:      "Map<String, dynamic>",
+				Type:      ei.Name,
+			}
+		}
+	}
 
 	if name, ok := g.converted[obj.Name]; ok {
 		return convertedType{
