@@ -149,11 +149,11 @@ class {{ $elm.Name }} {
 {{- end }}
 
 
-  {{ $elm.Name }}({
+  {{ $elm.Name }}({{ if $elm.Fields }}{
 {{- range $f := $elm.Fields }}
     {{ if $f.Required}}required {{end}}this.{{ $f.Field }}{{ if and (ne $f.Default "null") (ne $f.Default "") }} = {{$f.Default}}{{ end }},
 {{- end }}
-  });
+  }{{ end }});
 
   factory {{ $elm.Name }}.fromJson(Map<String, dynamic> json) {
     return {{ $elm.Name }}(
