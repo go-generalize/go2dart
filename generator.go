@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	tstypes "github.com/go-generalize/go2ts/pkg/types"
+	"github.com/iancoleman/strcase"
 	"golang.org/x/xerrors"
 )
 
@@ -273,7 +274,7 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 		ct := g.convert(t, &metadata{upperStructName: name, inlineIndex: i})
 
 		converted.Fields = append(converted.Fields, objectEntry{
-			Field:     e.name,
+			Field:     strcase.ToLowerCamel(e.name),
 			Converter: ct.Converter,
 			Type:      ct.Type,
 			Tag:       e.RawTag,
