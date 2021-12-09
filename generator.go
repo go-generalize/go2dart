@@ -25,6 +25,7 @@ type Generator struct {
 type objectEntry struct {
 	Converter string
 	Field     string
+	JsonField string
 	Type      string
 	Tag       string
 	Default   string
@@ -275,6 +276,7 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 
 		converted.Fields = append(converted.Fields, objectEntry{
 			Field:     strcase.ToLowerCamel(e.name),
+			JsonField: e.name,
 			Converter: ct.Converter,
 			Type:      ct.Type,
 			Tag:       e.RawTag,
