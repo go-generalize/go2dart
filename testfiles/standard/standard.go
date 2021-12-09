@@ -32,3 +32,6 @@ type PostUserRequest struct {
 	SinS   StructInStruct
 	SinSs  []StructInStruct
 }
+
+type EmptyStruct struct {
+}

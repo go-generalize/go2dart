@@ -149,16 +149,16 @@ class {{ $elm.Name }} {
 {{- end }}
 
 
-  {{ $elm.Name }}({
+  {{ $elm.Name }}({{ if $elm.Fields }}{
 {{- range $f := $elm.Fields }}
     {{ if $f.Required}}required {{end}}this.{{ $f.Field }}{{ if and (ne $f.Default "null") (ne $f.Default "") }} = {{$f.Default}}{{ end }},
 {{- end }}
-  });
+  }{{ end }});
 
   factory {{ $elm.Name }}.fromJson(Map<String, dynamic> json) {
     return {{ $elm.Name }}(
 {{- range $f := $elm.Fields }}
-      {{ $f.Field }}: {{ if ne $f.Converter "" }}{{ $f.Converter }}.fromJson(json['{{ $f.Field }}']){{ else }}json['{{ $f.Field }}'] as {{ $f.Type }}{{end}},
+      {{ $f.Field }}: {{ if ne $f.Converter "" }}{{ $f.Converter }}.fromJson(json['{{ $f.JsonField }}']){{ else }}json['{{ $f.JsonField }}'] as {{ $f.Type }}{{end}},
 {{- end }}
     );
   }
@@ -166,7 +166,7 @@ class {{ $elm.Name }} {
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
 {{- range $f := $elm.Fields }}
-      '{{ $f.Field }}': {{ if ne $f.Converter "" }}{{ $f.Converter }}.toJson({{ $f.Field }}){{ else }}{{ $f.Field }}{{end}},
+      '{{ $f.JsonField }}': {{ if ne $f.Converter "" }}{{ $f.Converter }}.toJson({{ $f.Field }}){{ else }}{{ $f.Field }}{{end}},
 {{- end }}
     };
   }
