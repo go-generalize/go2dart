@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:intl/intl.dart';
+{{- range $elm := .Imported }}
+import '{{ $elm }}' as {{ GetImportAlias $elm }};
+{{- end }}
 
 abstract class JsonConverter<T, S> {
   const JsonConverter();

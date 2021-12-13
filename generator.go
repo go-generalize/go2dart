@@ -3,7 +3,9 @@ package generator
 import (
 	"bytes"
 	"crypto/sha1"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"text/template"
@@ -56,8 +58,9 @@ type constant struct {
 }
 
 type generatorParam struct {
-	Consts  []constant
-	Objects []object
+	Consts   []constant
+	Objects  []object
+	Imported []string
 
 	UseTimePackage bool
 }
@@ -85,11 +88,12 @@ func NewGenerator(types map[string]tstypes.Type, prereserved []string) *Generato
 }
 
 type convertedType struct {
-	Default   string
-	Required  bool
-	Converter string
-	Type      string
-	Base      string
+	Default     string
+	Required    bool
+	Converter   string
+	Type        string
+	Base        string
+	ImportAlias string
 }
 
 func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
@@ -242,6 +246,12 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 	}
 }
 
+func (g *Generator) getImportAlias(path string) string {
+	cs := sha256.Sum256([]byte(path))
+
+	return "external_" + hex.EncodeToString(cs[:])[:7]
+}
+
 func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) convertedType {
 	var converted object
 
@@ -252,10 +262,11 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 			g.imported[ei.Path] = struct{}{}
 
 			return convertedType{
-				Required:  true,
-				Converter: ei.Name + "Converter()",
-				Base:      "Map<String, dynamic>",
-				Type:      ei.Name,
+				Required:    true,
+				Converter:   ei.Name + "Converter()",
+				Base:        "Map<String, dynamic>",
+				Type:        ei.Name,
+				ImportAlias: g.getImportAlias(ei.Path),
 			}
 		}
 	}
@@ -297,11 +308,16 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 
 		ct := g.convert(t, &metadata{upperStructName: name, inlineIndex: i})
 
+		importPrefix := ""
+		if ct.ImportAlias != "" {
+			importPrefix = ct.ImportAlias + "."
+		}
+
 		converted.Fields = append(converted.Fields, objectEntry{
 			Field:     ReplaceFieldName(e.ObjectEntry.RawName),
 			JsonField: e.name,
-			Converter: ct.Converter,
-			Type:      ct.Type,
+			Converter: importPrefix + ct.Converter,
+			Type:      importPrefix + ct.Type,
 			Tag:       e.RawTag,
 			Default:   ct.Default,
 			Required:  ct.Required,
@@ -356,8 +372,17 @@ func (g *Generator) Generate() (string, error) {
 	sort.Slice(g.Consts, func(i, j int) bool {
 		return g.Consts[i].Name < g.Consts[j].Name
 	})
+	g.Imported = make([]string, 0, len(g.imported))
+	for k := range g.imported {
+		g.Imported = append(g.Imported, k)
+	}
+	sort.Slice(g.Imported, func(i, j int) bool {
+		return g.Imported[i] < g.Imported[j]
+	})
 
-	tmpl := template.Must(template.New("").Parse(templateBase))
+	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+		"GetImportAlias": g.getImportAlias,
+	}).Parse(templateBase))
 
 	buf := bytes.NewBuffer(nil)
 	if err := tmpl.Execute(buf, g.generatorParam); err != nil {
