@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-generalize/go2ts/pkg/parser"
-	"github.com/go-generalize/go2ts/pkg/types"
+	parser "github.com/go-generalize/go-easyparser"
+	"github.com/go-generalize/go-easyparser/types"
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -10,7 +10,7 @@ import (
 	"sort"
 	"text/template"
 
-	tstypes "github.com/go-generalize/go2ts/pkg/types"
+	tstypes "github.com/go-generalize/go-easyparser/types"
 	"golang.org/x/xerrors"
 )
 
