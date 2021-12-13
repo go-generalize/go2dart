@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-generalize/go2ts/pkg/parser"
+	"github.com/go-generalize/go2ts/pkg/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -34,7 +36,9 @@ func parseJson(t *testing.T, v string) map[string]interface{} {
 	return m
 }
 
-func testWithDatasets(t *testing.T, dir, structName string) {
+func parseAndGenerate(t *testing.T, dir string, ei func(o *types.Object) *ExternalImporter) {
+	t.Helper()
+
 	psr, err := parser.NewParser(dir, parser.All)
 	if err != nil {
 		t.Fatal(err)
@@ -46,6 +50,8 @@ func testWithDatasets(t *testing.T, dir, structName string) {
 		t.Fatal(err)
 	}
 	gen := NewGenerator(res, []string{})
+	gen.ExternalImporter = ei
+
 	b, err := gen.Generate()
 
 	if err != nil {
@@ -55,6 +61,10 @@ func testWithDatasets(t *testing.T, dir, structName string) {
 	if err := os.WriteFile(filepath.Join(dir, "/gen.dart"), []byte(b), 0744); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func testWithDatasets(t *testing.T, dir, structName string, ei func(o *types.Object) *ExternalImporter) {
+	parseAndGenerate(t, dir, ei)
 
 	runnerDart := fmt.Sprintf(
 		runnerDart,
@@ -108,6 +118,35 @@ func testWithDatasets(t *testing.T, dir, structName string) {
 	}
 }
 
+func getStructName(path string) string {
+	split := strings.Split(path, ".")
+
+	return split[len(split)-1]
+}
+
 func TestGenerator_Generate(t *testing.T) {
-	testWithDatasets(t, "testfiles/standard", "PostUserRequest")
+	wd, err := os.Getwd()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testWithDatasets(t, "testfiles/standard", "PostUserRequest", nil)
+
+	testWithDatasets(t, "testfiles/external", "Struct", func(o *types.Object) *ExternalImporter {
+		rel, err := filepath.Rel(filepath.Join(wd, "testfiles/external"), o.Position.Filename)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if strings.HasPrefix(rel, "../") || filepath.Dir(rel) == "." {
+			return nil
+		}
+
+		return &ExternalImporter{
+			Path: filepath.Dir(rel) + "/gen.dart",
+			Name: getStructName(o.Name),
+		}
+	})
 }
