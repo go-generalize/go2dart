@@ -151,7 +151,6 @@ class {{ $elm.Name }} {
   {{ $f.Type }} {{ $f.Field }};
 {{- end }}
 
-
   {{ $elm.Name }}({{ if $elm.Fields }}{
 {{- range $f := $elm.Fields }}
     {{ if $f.Required}}required {{end}}this.{{ $f.Field }}{{ if and (ne $f.Default "null") (ne $f.Default "") }} = {{$f.Default}}{{ end }},
@@ -174,4 +173,4 @@ class {{ $elm.Name }} {
     };
   }
 }
-{{ end }}
+{{ end -}}
