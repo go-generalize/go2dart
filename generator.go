@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"strings"
 	"text/template"
 
 	tstypes "github.com/go-generalize/go-easyparser/types"
@@ -130,6 +131,10 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		}
 	case *tstypes.Nullable:
 		ct := g.convert(v.Inner, meta)
+
+		if strings.HasSuffix(ct.Type, "?") {
+			return ct
+		}
 
 		return convertedType{
 			Default:   "null",

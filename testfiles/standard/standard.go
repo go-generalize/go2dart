@@ -24,6 +24,7 @@ type StructInStruct struct {
 
 type PostUserRequest struct {
 	T      time.Time
+	TPtr   *time.Time
 	S      string `json:"s"`
 	Status map[string][]StatusT
 	Mode   *ModeT
