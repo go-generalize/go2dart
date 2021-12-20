@@ -147,10 +147,12 @@ class {{ $elm.Name }}Converter implements JsonConverter<{{ $elm.Name }}, Map<Str
 }
 
 class {{ $elm.Name }} {
+{{- if $elm.Fields }}
 {{- range $f := $elm.Fields }}
   {{ $f.Type }} {{ $f.Field }};
 {{- end }}
 
+{{- end }}
   {{ $elm.Name }}({{ if $elm.Fields }}{
 {{- range $f := $elm.Fields }}
     {{ if $f.Required}}required {{end}}this.{{ $f.Field }}{{ if and (ne $f.Default "null") (ne $f.Default "") }} = {{$f.Default}}{{ end }},
