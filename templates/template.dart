@@ -87,7 +87,6 @@ class DoNothingConverter<T> implements JsonConverter<T, T> {
     return d;
   }
 }
-
 {{ range $elm := .Consts }}
 enum {{ $elm.Name }} {
 {{- range $c := $elm.Enums }}
@@ -130,8 +129,7 @@ extension {{ $elm.Name }}Extension on {{ $elm.Name }} {
   }
 }
 {{ end -}}
-
-{{- range $elm := .Objects }}
+{{ range $elm := .Objects }}
 class {{ $elm.Name }}Converter implements JsonConverter<{{ $elm.Name }}, Map<String, dynamic>> {
   const {{ $elm.Name }}Converter();
 
