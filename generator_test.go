@@ -131,6 +131,8 @@ func TestGenerator_Generate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	parseAndGenerate(t, "testfiles/empty", nil)
+
 	testWithDatasets(t, "testfiles/standard", "PostUserRequest", nil)
 
 	testWithDatasets(t, "testfiles/external", "Struct", func(o *types.Object) *ExternalImporter {
