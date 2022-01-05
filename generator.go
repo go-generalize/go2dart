@@ -143,7 +143,12 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 			Base:      ct.Base + "?",
 		}
 	case *tstypes.Any:
-		return convertedType{Type: "dynamic", Default: "null"}
+		return convertedType{
+			Type:      "dynamic",
+			Base:      "dynamic",
+			Converter: "DoNothingConverter<dynamic>()",
+			Default:   "null",
+		}
 	case *tstypes.Map:
 		key, value := g.convert(v.Key, meta), g.convert(v.Value, meta)
 		ct := convertedType{

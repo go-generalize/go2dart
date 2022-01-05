@@ -23,15 +23,16 @@ type StructInStruct struct {
 }
 
 type PostUserRequest struct {
-	T      time.Time
-	TPtr   *time.Time
-	S      string `json:"s"`
-	Status map[string][]StatusT
-	Mode   *ModeT
-	Array  []string
-	B      map[string]bool
-	SinS   StructInStruct
-	SinSs  []StructInStruct
+	T          time.Time
+	TPtr       *time.Time
+	S          string `json:"s"`
+	Status     map[string][]StatusT
+	Mode       *ModeT
+	Array      []string
+	B          map[string]bool
+	SinS       StructInStruct
+	SinSs      []StructInStruct
+	DynamicMap map[string]interface{}
 }
 
 type EmptyStruct struct {
