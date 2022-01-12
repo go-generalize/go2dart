@@ -3,6 +3,7 @@ package generator
 import (
 	"go/types"
 	"strings"
+	"unicode"
 )
 
 func getBasicTypeName(k types.BasicKind) string {
@@ -19,6 +20,18 @@ func getBasicTypeName(k types.BasicKind) string {
 	default:
 		return "dynamic" // Unsupported type
 	}
+}
+
+func convertEnumKey(key string) string {
+	if len(key) == 0 {
+		return ""
+	}
+
+	builder := strings.Builder{}
+	builder.WriteRune(unicode.ToLower(rune(key[0])))
+	builder.WriteString(key[1:])
+
+	return builder.String()
 }
 
 // SplitPackegeStruct - package.structを分割
