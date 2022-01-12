@@ -179,7 +179,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 
 	if name, ok := g.converted[str.Name]; ok {
 		return convertedType{
-			Default:   name + "." + str.RawEnum[0].Key,
+			Default:   name + "." + convertEnumKey(str.RawEnum[0].Key),
 			Converter: name + "Converter()",
 			Base:      "String",
 			Type:      name,
@@ -191,7 +191,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 
 	for _, e := range str.RawEnum {
 		consts = append(consts, constantEnum{
-			Name:  e.Key,
+			Name:  convertEnumKey(e.Key),
 			Value: "'" + e.Value + "'",
 		})
 	}
@@ -203,7 +203,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 	})
 
 	return convertedType{
-		Default:   name + "." + str.RawEnum[0].Key,
+		Default:   name + "." + convertEnumKey(str.RawEnum[0].Key),
 		Converter: name + "Converter()",
 		Base:      "String",
 		Type:      name,
@@ -224,7 +224,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 	baseType := getBasicTypeName(num.RawType)
 	if name, ok := g.converted[num.Name]; ok {
 		return convertedType{
-			Default:   name + "." + num.RawEnum[0].Key,
+			Default:   name + "." + convertEnumKey(num.RawEnum[0].Key),
 			Converter: name + "Converter()",
 			Base:      baseType,
 			Type:      name,
@@ -237,7 +237,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 
 	for _, e := range num.RawEnum {
 		enums = append(enums, constantEnum{
-			Name:  e.Key,
+			Name:  convertEnumKey(e.Key),
 			Value: fmt.Sprint(e.Value),
 		}) // Support multiple types
 	}
@@ -249,7 +249,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 	})
 
 	return convertedType{
-		Default:   name + "." + num.RawEnum[0].Key,
+		Default:   name + "." + convertEnumKey(num.RawEnum[0].Key),
 		Converter: name + "Converter()",
 		Base:      baseType,
 		Type:      name,

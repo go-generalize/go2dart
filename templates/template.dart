@@ -21,7 +21,7 @@ class ListConverter<T, Base> implements JsonConverter<List<T>, List<Base>> {
 
   @override
   List<Base> toJson(List<T> arr) {
-    return arr.map((e) => internalConverter.toJson(e) as Base).toList();
+    return arr.map((e) => internalConverter.toJson(e)).toList();
   }
 }
 
@@ -156,7 +156,7 @@ class {{ $elm.Name }} {
   factory {{ $elm.Name }}.fromJson(Map<String, dynamic> json) {
     return {{ $elm.Name }}(
 {{- range $f := $elm.Fields }}
-      {{ $f.Field }}: {{ if ne $f.Converter "" }}{{ $f.Converter }}.fromJson(json['{{ $f.JsonField }}']){{ else }}json['{{ $f.JsonField }}'] as {{ $f.Type }}{{end}},
+      {{ $f.Field }}: const {{ if ne $f.Converter "" }}{{ $f.Converter }}.fromJson(json['{{ $f.JsonField }}']){{ else }}json['{{ $f.JsonField }}'] as {{ $f.Type }}{{end}},
 {{- end }}
     );
   }
@@ -164,7 +164,7 @@ class {{ $elm.Name }} {
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
 {{- range $f := $elm.Fields }}
-      '{{ $f.JsonField }}': {{ if ne $f.Converter "" }}{{ $f.Converter }}.toJson({{ $f.Field }}){{ else }}{{ $f.Field }}{{end}},
+      '{{ $f.JsonField }}': const {{ if ne $f.Converter "" }}{{ $f.Converter }}.toJson({{ $f.Field }}){{ else }}{{ $f.Field }}{{end}},
 {{- end }}
     };
   }
