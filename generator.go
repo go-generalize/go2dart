@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -24,6 +25,7 @@ type Generator struct {
 	reserved    map[string]struct{}
 
 	ExternalImporter func(*tstypes.Object) *ExternalImporter
+	Converter        func(v tstypes.Type, meta *metadata) *ConvertedType
 	imported         map[string]struct{}
 }
 
@@ -88,7 +90,8 @@ func NewGenerator(types map[string]tstypes.Type, prereserved []string) *Generato
 	}
 }
 
-type convertedType struct {
+// ConvertedType is a result type for Converter
+type ConvertedType struct {
 	Default     string
 	Required    bool
 	Converter   string
@@ -97,7 +100,11 @@ type convertedType struct {
 	ImportAlias string
 }
 
-func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
+func (g *Generator) convert(v tstypes.Type, meta *metadata) ConvertedType {
+	if conv := g.Converter(v, meta); conv != nil {
+		return *conv
+	}
+
 	switch v := v.(type) {
 	case *tstypes.Array:
 		ct := g.convert(v.Inner, meta)
@@ -115,7 +122,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 	case *tstypes.Number:
 		return g.convertNumber(v, meta)
 	case *tstypes.Boolean:
-		return convertedType{
+		return ConvertedType{
 			Type:      "bool",
 			Base:      "bool",
 			Converter: "DoNothingConverter<bool>()",
@@ -123,7 +130,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		}
 	case *tstypes.Date:
 		g.UseTimePackage = true
-		return convertedType{
+		return ConvertedType{
 			Default:   "null",
 			Type:      "DateTime?",
 			Base:      "String",
@@ -136,14 +143,14 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 			return ct
 		}
 
-		return convertedType{
+		return ConvertedType{
 			Default:   "null",
 			Converter: fmt.Sprintf("NullableConverter<%s, %s>(%s)", ct.Type, ct.Base, ct.Converter),
 			Type:      ct.Type + "?",
 			Base:      ct.Base + "?",
 		}
 	case *tstypes.Any:
-		return convertedType{
+		return ConvertedType{
 			Type:      "dynamic",
 			Base:      "dynamic",
 			Converter: "DoNothingConverter<dynamic>()",
@@ -151,7 +158,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		}
 	case *tstypes.Map:
 		key, value := g.convert(v.Key, meta), g.convert(v.Value, meta)
-		ct := convertedType{
+		ct := ConvertedType{
 			Type:    "Map<" + key.Type + ", " + value.Type + ">",
 			Default: "const {}",
 		}
@@ -167,9 +174,9 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 	}
 }
 
-func (g *Generator) convertString(str *tstypes.String, upper *metadata) convertedType {
+func (g *Generator) convertString(str *tstypes.String, upper *metadata) ConvertedType {
 	if len(str.Enum) == 0 {
-		return convertedType{
+		return ConvertedType{
 			Type:      "String",
 			Base:      "String",
 			Converter: "DoNothingConverter<String>()",
@@ -178,7 +185,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 	}
 
 	if name, ok := g.converted[str.Name]; ok {
-		return convertedType{
+		return ConvertedType{
 			Default:   name + "." + convertEnumKey(str.RawEnum[0].Key),
 			Converter: name + "Converter()",
 			Base:      "String",
@@ -202,7 +209,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 		Enums: consts,
 	})
 
-	return convertedType{
+	return ConvertedType{
 		Default:   name + "." + convertEnumKey(str.RawEnum[0].Key),
 		Converter: name + "Converter()",
 		Base:      "String",
@@ -210,10 +217,10 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 	}
 }
 
-func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) convertedType {
+func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) ConvertedType {
 	if len(num.Enum) == 0 {
 		t := getBasicTypeName(num.RawType)
-		return convertedType{
+		return ConvertedType{
 			Default:   "0",
 			Type:      t,
 			Base:      t,
@@ -223,7 +230,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 
 	baseType := getBasicTypeName(num.RawType)
 	if name, ok := g.converted[num.Name]; ok {
-		return convertedType{
+		return ConvertedType{
 			Default:   name + "." + convertEnumKey(num.RawEnum[0].Key),
 			Converter: name + "Converter()",
 			Base:      baseType,
@@ -248,7 +255,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 		Enums: enums,
 	})
 
-	return convertedType{
+	return ConvertedType{
 		Default:   name + "." + convertEnumKey(num.RawEnum[0].Key),
 		Converter: name + "Converter()",
 		Base:      baseType,
@@ -262,7 +269,7 @@ func (g *Generator) getImportAlias(path string) string {
 	return "external_" + hex.EncodeToString(cs[:])[:7]
 }
 
-func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) convertedType {
+func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) ConvertedType {
 	var converted object
 
 	if g.ExternalImporter != nil {
@@ -271,7 +278,7 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 		if ei != nil {
 			g.imported[ei.Path] = struct{}{}
 
-			return convertedType{
+			return ConvertedType{
 				Required:    true,
 				Converter:   ei.Name + "Converter()",
 				Base:        "Map<String, dynamic>",
@@ -282,7 +289,7 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 	}
 
 	if name, ok := g.converted[obj.Name]; ok {
-		return convertedType{
+		return ConvertedType{
 			Required:  true,
 			Converter: name + "Converter()",
 			Base:      "Map<String, dynamic>",
@@ -310,6 +317,10 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 	})
 
 	for i, e := range entries {
+		if reflect.StructTag(e.RawTag).Get("json") == "-" {
+			continue
+		}
+
 		t := e.Type
 
 		if e.Optional {
@@ -337,7 +348,7 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 	converted.Name = name
 	g.Objects = append(g.Objects, converted)
 
-	return convertedType{
+	return ConvertedType{
 		Required:  true,
 		Converter: name + "Converter()",
 		Base:      "Map<String, dynamic>",
