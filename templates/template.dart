@@ -155,17 +155,17 @@ class {{ $elm.Name }} {
 
   factory {{ $elm.Name }}.fromJson(Map<String, dynamic> json) {
     return {{ $elm.Name }}(
-{{- range $f := $elm.Fields }}
+{{- range $f := $elm.Fields }}{{ if not $f.IgnoredInJSON }}
       {{ $f.Field }}: const {{ if ne $f.Converter "" }}{{ $f.Converter }}.fromJson(json['{{ $f.JsonField }}']){{ else }}json['{{ $f.JsonField }}'] as {{ $f.Type }}{{end}},
-{{- end }}
+{{ end }}{{- end }}
     );
   }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-{{- range $f := $elm.Fields }}
+{{- range $f := $elm.Fields }}{{ if not $f.IgnoredInJSON }}
       '{{ $f.JsonField }}': const {{ if ne $f.Converter "" }}{{ $f.Converter }}.toJson({{ $f.Field }}){{ else }}{{ $f.Field }}{{end}},
-{{- end }}
+{{- end }}{{ end }}
     };
   }
 }
