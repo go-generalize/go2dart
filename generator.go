@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -33,13 +34,14 @@ type ExternalImporter struct {
 }
 
 type objectEntry struct {
-	Converter string
-	Field     string
-	JsonField string
-	Type      string
-	Tag       string
-	Default   string
-	Required  bool
+	Converter     string
+	Field         string
+	JsonField     string
+	Type          string
+	Tag           string
+	Default       string
+	Required      bool
+	IgnoredInJSON bool
 }
 
 type object struct {
@@ -323,14 +325,17 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 			importPrefix = ct.ImportAlias + "."
 		}
 
+		ignoredInJSON := reflect.StructTag(e.RawTag).Get("json") == "-"
+
 		converted.Fields = append(converted.Fields, objectEntry{
-			Field:     ReplaceFieldName(e.ObjectEntry.RawName),
-			JsonField: e.name,
-			Converter: importPrefix + ct.Converter,
-			Type:      importPrefix + ct.Type,
-			Tag:       e.RawTag,
-			Default:   ct.Default,
-			Required:  ct.Required,
+			Field:         ReplaceFieldName(e.ObjectEntry.RawName),
+			JsonField:     e.name,
+			Converter:     importPrefix + ct.Converter,
+			Type:          importPrefix + ct.Type,
+			Tag:           e.RawTag,
+			Default:       ct.Default,
+			Required:      ct.Required,
+			IgnoredInJSON: ignoredInJSON,
 		})
 	}
 
