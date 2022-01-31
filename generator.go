@@ -126,8 +126,8 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 	case *tstypes.Date:
 		g.UseTimePackage = true
 		return convertedType{
-			Default:   "null",
-			Type:      "DateTime?",
+			Required:  true,
+			Type:      "DateTime",
 			Base:      "String",
 			Converter: "DateTimeConverter()",
 		}
