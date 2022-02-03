@@ -272,13 +272,14 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 
 		if ei != nil {
 			g.imported[ei.Path] = struct{}{}
+			alias := g.getImportAlias(ei.Path)
 
 			return convertedType{
 				Required:    true,
-				Converter:   ei.Name + "Converter()",
+				Converter:   alias + "." + ei.Name + "Converter()",
 				Base:        "Map<String, dynamic>",
-				Type:        ei.Name,
-				ImportAlias: g.getImportAlias(ei.Path),
+				Type:        alias + "." + ei.Name,
+				ImportAlias: alias,
 			}
 		}
 	}
@@ -320,18 +321,13 @@ func (g *Generator) convertObject(obj *tstypes.Object, upper *metadata) converte
 
 		ct := g.convert(t, &metadata{upperStructName: name, inlineIndex: i})
 
-		importPrefix := ""
-		if ct.ImportAlias != "" {
-			importPrefix = ct.ImportAlias + "."
-		}
-
 		ignoredInJSON := reflect.StructTag(e.RawTag).Get("json") == "-"
 
 		converted.Fields = append(converted.Fields, objectEntry{
 			Field:         ReplaceFieldName(e.ObjectEntry.RawName),
 			JsonField:     e.name,
-			Converter:     importPrefix + ct.Converter,
-			Type:          importPrefix + ct.Type,
+			Converter:     ct.Converter,
+			Type:          ct.Type,
 			Tag:           e.RawTag,
 			Default:       ct.Default,
 			Required:      ct.Required,
