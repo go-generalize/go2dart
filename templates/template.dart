@@ -2,6 +2,7 @@
 import '{{ $elm }}' as {{ GetImportAlias $elm }};
 {{- end }}
 
+{{- if eq (len GetExternalCommonConverterAlias) 0 -}}
 abstract class JsonConverter<T, S> {
   const JsonConverter();
 
@@ -84,6 +85,7 @@ class DoNothingConverter<T> implements JsonConverter<T, T> {
     return d;
   }
 }
+{{- end }}
 {{ range $elm := .Consts }}
 enum {{ $elm.Name }} {
 {{- range $c := $elm.Enums }}
@@ -91,7 +93,7 @@ enum {{ $elm.Name }} {
 {{- end }}
 }
 
-class {{ $elm.Name }}Converter implements JsonConverter<{{ $elm.Name }}, {{ $elm.Base }}> {
+class {{ $elm.Name }}Converter implements {{ GetExternalCommonConverterAlias }}JsonConverter<{{ $elm.Name }}, {{ $elm.Base }}> {
   const {{ $elm.Name }}Converter();
 
   @override 
@@ -127,7 +129,7 @@ extension {{ $elm.Name }}Extension on {{ $elm.Name }} {
 }
 {{ end -}}
 {{ range $elm := .Objects }}
-class {{ $elm.Name }}Converter implements JsonConverter<{{ $elm.Name }}, Map<String, dynamic>> {
+class {{ $elm.Name }}Converter implements {{ GetExternalCommonConverterAlias }}JsonConverter<{{ $elm.Name }}, Map<String, dynamic>> {
   const {{ $elm.Name }}Converter();
 
   @override 
