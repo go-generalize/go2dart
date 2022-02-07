@@ -24,8 +24,9 @@ type Generator struct {
 	prereserved map[string]string
 	reserved    map[string]struct{}
 
-	ExternalImporter func(*tstypes.Object) *ExternalImporter
-	imported         map[string]struct{}
+	ExternalImporter            func(*tstypes.Object) *ExternalImporter
+	ExternalCommonConverterPath string
+	imported                    map[string]struct{}
 }
 
 type ExternalImporter struct {
@@ -99,12 +100,20 @@ type convertedType struct {
 	ImportAlias string
 }
 
+func (g *Generator) getExternalCommonConverterAlias() string {
+	if g.ExternalCommonConverterPath == "" {
+		return ""
+	}
+
+	return g.getImportAlias(g.ExternalCommonConverterPath) + "."
+}
+
 func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 	switch v := v.(type) {
 	case *tstypes.Array:
 		ct := g.convert(v.Inner, meta)
 		if ct.Converter != "" {
-			ct.Converter = fmt.Sprintf("ListConverter<%s, %s>(%s)", ct.Type, ct.Base, ct.Converter)
+			ct.Converter = fmt.Sprintf("%sListConverter<%s, %s>(%s)", g.getExternalCommonConverterAlias(), ct.Type, ct.Base, ct.Converter)
 		}
 		ct.Type = "List<" + ct.Type + ">"
 		ct.Base = "List<" + ct.Base + ">"
@@ -120,7 +129,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		return convertedType{
 			Type:      "bool",
 			Base:      "bool",
-			Converter: "DoNothingConverter<bool>()",
+			Converter: fmt.Sprintf("%sDoNothingConverter<bool>()", g.getExternalCommonConverterAlias()),
 			Default:   "false",
 		}
 	case *tstypes.Date:
@@ -129,7 +138,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 			Default:   "null",
 			Type:      "DateTime?",
 			Base:      "String",
-			Converter: "DateTimeConverter()",
+			Converter: fmt.Sprintf("%sDateTimeConverter()", g.getExternalCommonConverterAlias()),
 		}
 	case *tstypes.Nullable:
 		ct := g.convert(v.Inner, meta)
@@ -140,7 +149,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 
 		return convertedType{
 			Default:   "null",
-			Converter: fmt.Sprintf("NullableConverter<%s, %s>(%s)", ct.Type, ct.Base, ct.Converter),
+			Converter: fmt.Sprintf("%sNullableConverter<%s, %s>(%s)", g.getExternalCommonConverterAlias(), ct.Type, ct.Base, ct.Converter),
 			Type:      ct.Type + "?",
 			Base:      ct.Base + "?",
 		}
@@ -148,7 +157,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		return convertedType{
 			Type:      "dynamic",
 			Base:      "dynamic",
-			Converter: "DoNothingConverter<dynamic>()",
+			Converter: fmt.Sprintf("%sDoNothingConverter<dynamic>()", g.getExternalCommonConverterAlias()),
 			Default:   "null",
 		}
 	case *tstypes.Map:
@@ -159,7 +168,7 @@ func (g *Generator) convert(v tstypes.Type, meta *metadata) convertedType {
 		}
 
 		if value.Converter != "" {
-			ct.Converter = fmt.Sprintf("MapConverter<%s, %s, %s>(%s)", key.Type, value.Type, value.Base, value.Converter)
+			ct.Converter = fmt.Sprintf("%sMapConverter<%s, %s, %s>(%s)", g.getExternalCommonConverterAlias(), key.Type, value.Type, value.Base, value.Converter)
 			ct.Base = "Map<" + key.Type + ", " + value.Base + ">"
 		}
 
@@ -174,7 +183,7 @@ func (g *Generator) convertString(str *tstypes.String, upper *metadata) converte
 		return convertedType{
 			Type:      "String",
 			Base:      "String",
-			Converter: "DoNothingConverter<String>()",
+			Converter: fmt.Sprintf("%sDoNothingConverter<String>()", g.getExternalCommonConverterAlias()),
 			Default:   `''`,
 		}
 	}
@@ -219,7 +228,7 @@ func (g *Generator) convertNumber(num *tstypes.Number, upper *metadata) converte
 			Default:   "0",
 			Type:      t,
 			Base:      t,
-			Converter: fmt.Sprintf("DoNothingConverter<%s>()", t),
+			Converter: fmt.Sprintf("%sDoNothingConverter<%s>()", g.getExternalCommonConverterAlias(), t),
 		}
 	}
 
@@ -383,16 +392,21 @@ func (g *Generator) Generate() (string, error) {
 	sort.Slice(g.Consts, func(i, j int) bool {
 		return g.Consts[i].Name < g.Consts[j].Name
 	})
+
+	g.imported[g.ExternalCommonConverterPath] = struct{}{}
+
 	g.Imported = make([]string, 0, len(g.imported))
 	for k := range g.imported {
 		g.Imported = append(g.Imported, k)
 	}
+
 	sort.Slice(g.Imported, func(i, j int) bool {
 		return g.Imported[i] < g.Imported[j]
 	})
 
 	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"GetImportAlias": g.getImportAlias,
+		"GetImportAlias":                  g.getImportAlias,
+		"GetExternalCommonConverterAlias": g.getExternalCommonConverterAlias,
 	}).Parse(templateBase))
 
 	buf := bytes.NewBuffer(nil)

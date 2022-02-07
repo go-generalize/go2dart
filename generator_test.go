@@ -36,7 +36,7 @@ func parseJson(t *testing.T, v string) map[string]interface{} {
 	return m
 }
 
-func parseAndGenerate(t *testing.T, dir string, ei func(o *types.Object) *ExternalImporter) {
+func parseAndGenerate(t *testing.T, dir string, ei func(o *types.Object) *ExternalImporter, eccp string) {
 	t.Helper()
 
 	psr, err := parser.NewParser(dir, parser.All)
@@ -51,6 +51,7 @@ func parseAndGenerate(t *testing.T, dir string, ei func(o *types.Object) *Extern
 	}
 	gen := NewGenerator(res, []string{})
 	gen.ExternalImporter = ei
+	gen.ExternalCommonConverterPath = eccp
 
 	b, err := gen.Generate()
 
@@ -63,8 +64,8 @@ func parseAndGenerate(t *testing.T, dir string, ei func(o *types.Object) *Extern
 	}
 }
 
-func testWithDatasets(t *testing.T, dir, structName string, ei func(o *types.Object) *ExternalImporter) {
-	parseAndGenerate(t, dir, ei)
+func testWithDatasets(t *testing.T, dir, structName string, ei func(o *types.Object) *ExternalImporter, eccp string) {
+	parseAndGenerate(t, dir, ei, eccp)
 
 	runnerDart := fmt.Sprintf(
 		runnerDart,
@@ -131,9 +132,9 @@ func TestGenerator_Generate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parseAndGenerate(t, "testfiles/empty", nil)
+	parseAndGenerate(t, "testfiles/empty", nil, "")
 
-	testWithDatasets(t, "testfiles/standard", "PostUserRequest", nil)
+	testWithDatasets(t, "testfiles/standard", "PostUserRequest", nil, "")
 
 	testWithDatasets(t, "testfiles/external", "Struct", func(o *types.Object) *ExternalImporter {
 		rel, err := filepath.Rel(filepath.Join(wd, "testfiles/external"), o.Position.Filename)
@@ -150,5 +151,5 @@ func TestGenerator_Generate(t *testing.T) {
 			Path: filepath.Dir(rel) + "/gen.dart",
 			Name: getStructName(o.Name),
 		}
-	})
+	}, "imported/gen.dart")
 }
