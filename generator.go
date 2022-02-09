@@ -393,7 +393,9 @@ func (g *Generator) Generate() (string, error) {
 		return g.Consts[i].Name < g.Consts[j].Name
 	})
 
-	g.imported[g.ExternalCommonConverterPath] = struct{}{}
+	if g.ExternalCommonConverterPath != "" {
+		g.imported[g.ExternalCommonConverterPath] = struct{}{}
+	}
 
 	g.Imported = make([]string, 0, len(g.imported))
 	for k := range g.imported {
